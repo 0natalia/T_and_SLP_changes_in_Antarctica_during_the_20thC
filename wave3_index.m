@@ -1,6 +1,5 @@
 %________________________________________________________________________
-%           Zonal Wave 3 index and its correlation with T changes           
-%                   ERA20C and NOAA20CR reanalysis data
+%           Zonal Wave 3 index and its correlation with T changes                             
 % ZW3 index from Raphael (2004)
 
 % Natália Silva; natalia3.silva@usp.br
@@ -14,11 +13,6 @@ clear all; close all
 pera = ('home/natalia/reanalises/ERA20C/era_slp.nc');
 slpera = ncread(pera,'msl'); slpera = slpera/100; % hPa
 slpera = cat(1,slpera, slpera(end,:,:)); slpera = [slpera(:,1,:) slpera];
-% NOAA
-pnoaa = ('home/natalia/reanalises/NOAA20CR/slp.mon.mean.nc');
-slpnoaa = ncread(pnoaa,'prmsl'); 
-slpnoaa = slpnoaa(:,:,589:1920); slpnoaa = slpnoaa/100; % hPa
-slpnoaa = cat(1, slpnoaa, slpnoaa(end,:,:)); slpnoaa = [slpnoaa(:,1,:) slpnoaa];
 
 lat = ncread(pera,'lat'); lat = [-90;lat]; 
 lon = ncread(pera,'lon');  lon(end+1) = 180;
@@ -43,18 +37,6 @@ title('PNM med (ERA20C)','Position',[0 0.7 1]);
 clabel(c, 'manual','color', [0.5 0.5 0.5]); colormap(flipud(cmocean('balance')))
 clear t; clear ttt; clear tt; clear ans;
 
-figure('color',[1 1 1],'position',[10 805 900 800]); 
-m_proj('stereographic','lat',-90,'long',0,'radius',35);
-[c] = m_contour(lon,lat(lat<-54),mean(slpnoaa(:,lat<-54,:),3)',v, ...
-    'linewidth', 2.7, 'color', 'k');
-m_grid('xtick',[0 45 90 135 180 -45 -90 -135],'tickdir','out','ytick',...
-    [-60 -75 -90],'tickdir','out', 'xaxisLocation', 'top', 'yaxisLocation', ...
-    'middle','fontsize',10,'linestyle',':','linewidth',0.5);
-m_coast('patch',[.7 .7 .7],'edgecolor','none');
-title('PNM med (NOAA20CR)','Position',[0 0.7 1]);
-clabel(c, 'manual','color', [0.5 0.5 0.5]); colormap(flipud(cmocean('balance')))
-clear t; clear ttt; clear tt; clear ans;
-
 %% ZW3 index
 
 % climatologia
@@ -71,11 +53,6 @@ for mm = [1, 2, 3]
     clmt_era = [mean(slp_era(djf)) mean(slp_era(mam))...
         mean(slp_era(jja)) mean(slp_era(son))];
     slp_era = [slp_era; 0; 0]; 
-    
-    slp_noaa = squeeze(mean(slpnoaa(long{mm},lat1,:),2));
-    clmt_noaa = [mean(slp_noaa(djf)) mean(slp_noaa(mam)) ...
-        mean(slp_noaa(jja)) mean(slp_noaa(son))];
-    slp_noaa = [slp_noaa; 0; 0]; djf = [djf; djf(end)+1; djf(end)+2];
      
     % seasonal mean
     mntly_era = zeros(1,444); std_era = zeros(1,444); posi = 1;
@@ -92,17 +69,6 @@ for mm = [1, 2, 3]
         std_era(posi+1) = std(slp_era(jja(i:i+2)));
         std_era(posi+2) = std(slp_era(son(i:i+2)));
         std_era(posi+3) = std(slp_era(djf(i+2:i+4)));
-             
-        % NOAA %
-        mntly_noaa(posi) = mean(slp_noaa(mam(i:i+2)));
-        mntly_noaa(posi+1) = mean(slp_noaa(jja(i:i+2)));
-        mntly_noaa(posi+2) = mean(slp_noaa(son(i:i+2)));
-        mntly_noaa(posi+3) = mean(slp_noaa(djf(i+2:i+4)));
-    
-        std_noaa(posi) = std(slp_noaa(mam(i:i+2)));
-        std_noaa(posi+1) = std(slp_noaa(jja(i:i+2)));
-        std_noaa(posi+2) = std(slp_noaa(son(i:i+2)));
-        std_noaa(posi+3) = std(slp_noaa(djf(i+2:i+4)));
 
         posi = posi+4;
     end
@@ -119,7 +85,6 @@ for mm = [1, 2, 3]
     for i = 1:length(mntly_noaa)
     
         izw3_era(i) = ((mntly_era(i) - clmt_era(k)) / std_era(i));
-        izw3_noaa(i) = ((mntly_noaa(i) - clmt_noaa(k)) / std_noaa(i));
     
         if k<4
             k = k+1;
@@ -130,7 +95,7 @@ for mm = [1, 2, 3]
     clear clmt_era; clear mntly_era; clear std_era; clear i; clear k
     clear clmt_noaa; clear mntly_noaa; clear std_noaa
     
-    iw3_era = [iw3_era; izw3_era]; iw3_noaa = [iw3_noaa; izw3_noaa];
+    iw3_era = [iw3_era; izw3_era];
     clear izw3
     
 end
@@ -139,7 +104,7 @@ clear sas; clear izw3_era; clear izw3_noaa
 clear long; clear slp_era; clear slp_noaa;
 
 % mean index 3 points
-idx_era = mean(iw3_era); idx_noaa = mean(iw3_noaa);  
+idx_era = mean(iw3_era); 
 clear iw3_era; clear iw3_noaa
 
 % outlier
@@ -179,25 +144,6 @@ end
 t = (['Trend_{ERA}: ', num2str(trend_e,'% .3e'),...
     ' \pm ', num2str(erro_e,'% .3e'),'; ', SIG_e]);
 
-lsq_n = fitlm(tempo(1:3:end),idx_noaa);
-yo_n = lsq_n.Coefficients.Estimate(1);
-trend_n = lsq_n.Coefficients.Estimate(2); erro_n = lsq_n.Coefficients.SE(2);
-line_n = yo_n+trend_n*tempo(1:3:end); trend_n = (trend_n*10*4); erro_n = erro_n*10*4;
-p_value_n = lsq_n.Coefficients.pValue(2); 
-
-if p_value_n < 0.01
-    SIG_n = ('p < 0.01');
-elseif p_value_n < 0.05
-    SIG_n = ('p < 0.05');
-elseif p_value_n < 0.1
-    SIG_n = ('p < 0.1');
-else
-    SIG_n = ('p > 0.1');
-end
-
-tt = (['Trend_{NOAA}: ', num2str(trend_n,'% .3e'),...
-    ' \pm ', num2str(erro_n,'% .3e'),'; ', SIG_n]);
-
 clear erro_e; clear erro_n; clear lsq_e; clear lsq_n; clear p_value_e; 
 clear p_value_n; clear SIG_e; clear SIG_n; clear trend_e; clear trend_n
 clear yo_e; clear yo_n
@@ -228,44 +174,7 @@ end
 t50 = (['Trend_{ERA50}: ', num2str(trend_e_50, '% .3e'),...
     ' \pm ', num2str(erro_e_50,'% .3e'),'; ', SIG_e_50]);
 
-lsq_n_50 = fitlm(tempo_novo50,cinq_noaa); clear cinq_noaa;
-yo_n_50 = lsq_n_50.Coefficients.Estimate(1);
-trend_n_50 = lsq_n_50.Coefficients.Estimate(2); erro_n_50 = lsq_n_50.Coefficients.SE(2);
-line_n_50 = yo_n_50+trend_n_50*tempo_novo50; 
-trend_n_50 = (trend_n_50*10*4); erro_n_50 = erro_n_50*10*4;
-p_value_n_50 = lsq_n_50.Coefficients.pValue(2); 
-
-if p_value_n_50 < 0.01
-    SIG_n_50 = ('p < 0.01');
-elseif p_value_n_50 < 0.05
-    SIG_n_50 = ('p < 0.05');
-elseif p_value_n_50 < 0.1
-    SIG_n_50 = ('p < 0.1');
-else
-    SIG_n_50 = ('p > 0.1');
-end
-
-tt50 = (['Trend_{NOAA50}: ', num2str(trend_n_50,'% .3e'), ...
-    ' \pm ', num2str(erro_n_50,'% .3e'), '; ', SIG_n_50]);
-
-clear erro_e_50; clear erro_n_50; clear lsq_e_50; clear lsq_n_50; 
-clear p_value_e_50; clear p_value_n_50; clear yo_e_50; clear yo_n_50
-clear SIG_e_50; clear SIG_n_50; clear trend_e_50; clear trend_n_50
-
-
 %% PLOT
-
-figure('color',[1 1 1],'position',[108 305 850 700]);
-subplot(2,1,1); 
-plot(tempo(1:3:end), idx_noaa, 'color', 'k', 'linewidth',1);
-hold on; plot(tempo(1:3:end), line_n, 'color', 'r', 'linewidth',1.7)
-plot(tempo_novo50, line_n_50, '--', 'color', 'g', 'linewidth',2.2); 
-title('Indice Onda 3'); ylabel('I_{O3}');datetick('x',10,'keepticks')
-legend('NOAA20CR'); ylim([-1.1 1.1]); xlim([tempo(1) tempo(end)])
-vline(tempo(601), ':', 'color', [0.7 0.7 0.7]); 
-hline(0, '--', 'color', [0.7 0.7 0.7]);
-text(tempo(6), -0.7, tt, 'color', 'k', 'FontWeight', 'bold')
-text(tempo(6), -0.9, tt50, 'color', [0.4 0.4 0.4], 'FontSize', 8)
 
 subplot(2,1,2); 
 plot(tempo(1:3:end), idx_era, 'color', 'k', 'linewidth',1);
@@ -301,21 +210,6 @@ clear cont; clear sst; clear era20c; clear era20o; clear land
 detr_era = bsxfun(@minus,temp2(:,:,1:3:end),trend(temp2(:,:,1:3:end),[],3)); %total menos tendencia
 % T anomaly
 anom_era = bsxfun(@minus,detr_era,mean(detr_era,3));
-    
-% NOAA
-noaa = ('home/natalia/reanalises/NOAA20CR/temp.mon.mean.nc');
-temp1 = ncread(noaa,'air'); temp1 = temp1(:,:,349:1680); 
-temp1 = temp1-273; % dgC
-temp1 = cat(1,temp1,temp1(end,:,:)); % fechar em 360lon
-temp1 = cat(2,temp1,temp1(:,1,:)); % fechar em 90lat
-clear noaa;
-latc = lat(lat<-54); clear lat
-
-% remove T trend
-detr_noaa = bsxfun(@minus,temp1(:,:,1:3:end),trend(temp1(:,:,1:3:end),[],3));
-% T anomaly
-anom_noaa = bsxfun(@minus,detr_noaa,mean(detr_noaa,3));
-clear detr_era; clear detr_noaa; clear temp2; clear temp1
 
 % CORRELATION
 corr_e_detr = zeros(193,20); p_e_detr = zeros(193,20); % zeros(lon,lat)
@@ -354,23 +248,6 @@ title('Corr I_{O3} x T_{detrend} (ERA20C)','Position',[0 0.7 1]);
 t = colorbar('Position',[0.91 0.1 0.03 0.8]); tt = get(t,'title'); set(tt,'string','r')
 clear t; clear ttt; clear tt; clear ans;
 
-% CORR NOAA 20CR
-figure('color',[1 1 1],'position',[10 805 900 800]); 
-colormap(flipud(cbrewer('div','Spectral',80)))
-m_proj('stereographic','lat',-90,'long',0,'radius',35);
-m_contourf(lon,latc,corr_n_detr',v); hold on
-m_contour(lon,latc,corr_n_detr',v)
-m_contour(lon,latc,p_n_detr',':k')
-m_grid('xtick',[0 45 90 135 180 -45 -90 -135],'tickdir','out','ytick',...
-    [-60 -75 -90],'tickdir','out', 'xaxisLocation', 'top', ...
-    'yaxisLocation', 'middle','fontsize',10,'linestyle',':','linewidth',0.5);
-m_coast('color','k','linewidth',1.5); caxis([-0.25 0.25])
-title('Corr I_{O3} x T_{detrend} (NOAA 20CR)','Position',[0 0.7 1]);
-t = colorbar('Position',[0.91 0.1 0.03 0.8]); tt = get(t,'title'); set(tt,'string','r')
-clear t; clear ttt; clear tt; clear ans; 
-clear corr_e_detr; clear corr_n_detr
-clear p_e_detr; clear p_n_detr
-clear v
 
 %% CORRELACAO ZW3 x PNM
 % ERA
@@ -378,12 +255,6 @@ clear v
 detr_era = bsxfun(@minus,slpera(:,:,1:3:end),trend(slpera(:,:,1:3:end),[],3)); %total menos tendencia
 % SLP anomaly
 anom_era = bsxfun(@minus,slpera(:,:,1:3:end),mean(slpera(:,:,1:3:end),3));
-    
-% NOAA
-% remove SLP trend
-detr_noaa = bsxfun(@minus,slpnoaa(:,:,1:3:end),trend(slpnoaa(:,:,1:3:end),[],3));
-% SLP anomaly
-anom_noaa = bsxfun(@minus,slpnoaa(:,:,1:3:end),mean(slpnoaa(:,:,1:3:end),3));
 
 % CORRELATION SLP detrend
 corr_e_detr = zeros(193,20); p_e_detr = zeros(193,20); % zeros(lon,lat)
@@ -421,18 +292,3 @@ m_coast('color','k','linewidth',1.5); caxis([-0.25 0.25])
 title('Corr I_{O3} x PNM_{detrend} (ERA20C)','Position',[0 0.7 1]);
 t = colorbar('Position',[0.91 0.1 0.03 0.8]); tt = get(t,'title'); set(tt,'string','r')
 clear t; clear ttt; clear tt; clear ans;
-
-% CORR ERA 20C
-figure('color',[1 1 1],'position',[10 805 900 800]); 
-colormap(flipud(cmocean('curl')))
-m_proj('stereographic','lat',-90,'long',0,'radius',35);
-m_contourf(lon,latc,corr_n_detr',v); hold on
-m_contour(lon,latc,corr_n_detr',v)
-m_contour(lon,latc,p_n_detr',':k')
-m_grid('xtick',[0 45 90 135 180 -45 -90 -135],'tickdir','out','ytick',...
-    [-60 -75 -90],'tickdir','out', 'xaxisLocation', 'top', ...
-    'yaxisLocation', 'middle','fontsize',10,'linestyle',':','linewidth',0.5);
-m_coast('color','k','linewidth',1.5); caxis([-0.25 0.25])
-title('Corr I_{O3} x PNM_{detrend} (NOAA 20CR)','Position',[0 0.7 1]);
-t = colorbar('Position',[0.91 0.1 0.03 0.8]); tt = get(t,'title'); set(tt,'string','r')
-clear t; clear ttt; clear tt; clear ans; clear v
